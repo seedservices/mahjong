@@ -1,0 +1,219 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HK Mahjong Web</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="homeScreen" class="homeScreen">
+    <div class="homeCard">
+      <h1 id="homeTitle">Hong Kong Mahjong</h1>
+      <p id="homeSubtitle">Play against 3 bots in one full round.</p>
+      <div class="homeControls">
+        <label>
+          <span id="homeLangLabel">Language</span>
+          <select id="homeLangSelect" aria-label="Home Language">
+            <option value="en">English</option>
+            <option value="zh-HK" selected>繁體中文（香港）</option>
+          </select>
+        </label>
+        <label>
+          <span id="homeThemeLabel">Theme</span>
+          <select id="homeThemeSelect" aria-label="Home Theme">
+            <option value="jade">Jade</option>
+            <option value="harbor" selected>Harbor</option>
+            <option value="rosewood">Rosewood</option>
+          </select>
+        </label>
+        <label>
+          <span id="homeBackLabel">Back Tile Color</span>
+          <input id="homeBackColor" type="color" value="#9dc2e8">
+        </label>
+      </div>
+      <button id="startGameBtn">Start Game</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1 id="titleText">Hong Kong Mahjong</h1>
+        <p id="statusLine">Loading...</p>
+      </div>
+      <div class="topActions">
+        <button id="googleLoginBtn">Google Login</button>
+        <button id="googleLogoutBtn" class="hidden">Logout</button>
+        <div id="googleUserChip" class="googleUserChip hidden"></div>
+        <select id="themeSelect" aria-label="Theme">
+          <option value="jade">Jade</option>
+          <option value="harbor" selected>Harbor</option>
+          <option value="rosewood">Rosewood</option>
+        </select>
+        <input id="tileBackColor" type="color" value="#9dc2e8" aria-label="Back Tile Color">
+        <select id="langSelect" aria-label="Language">
+          <option value="en">English</option>
+          <option value="zh-HK" selected>繁體中文（香港）</option>
+        </select>
+        <button id="homeBtn">Home</button>
+        <button id="configBtn">Config</button>
+        <button id="newRoundBtn">New Round</button>
+      </div>
+    </header>
+    <section id="configPanel" class="configPanel hidden">
+      <label>
+        <span id="cfgDifficultyLabel">Difficulty</span>
+        <select id="difficultySelect">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+      <label>
+        <span id="cfgMinFanLabel">Min Fan</span>
+        <input id="minFanInput" type="number" min="1" max="13" value="3">
+      </label>
+      <label>
+        <span id="cfgCapLabel">Fan Cap</span>
+        <input id="fanCapInput" type="number" min="1" max="13" value="10">
+      </label>
+      <label class="cfgCheck">
+        <input id="alwaysRevealInput" type="checkbox" checked>
+        <span id="cfgRevealLabel">Reveal all tiles on end</span>
+      </label>
+      <label class="cfgCheck">
+        <input id="celebrateInput" type="checkbox" checked>
+        <span id="cfgCelebrateLabel">Celebrate winner</span>
+      </label>
+      <label>
+        <span id="cfgGoogleClientIdLabel">Google Client ID</span>
+        <input id="googleClientIdInput" type="text" placeholder="xxxx.apps.googleusercontent.com">
+      </label>
+      <button id="applyConfigBtn">Apply</button>
+    </section>
+
+    <main class="boardGrid">
+      <section class="table">
+        <div class="midRow">
+          <div class="opponent west" id="westPanel"></div>
+
+          <div class="centerCol">
+            <div class="opponent north" id="northPanel"></div>
+            <div class="centerZone">
+              <div class="metaRow">
+                <div class="meta" id="wallInfo"></div>
+                <div class="wallDice" id="wallDice"></div>
+              </div>
+              <div class="wallRing">
+                <div class="wallSide horizontal" id="wallNorth"></div>
+                <div class="wallMiddle">
+                  <div class="wallSide vertical" id="wallWest"></div>
+                  <div class="discards" id="discardGrid"></div>
+                  <div class="wallSide vertical" id="wallEast"></div>
+                </div>
+                <div class="wallSide horizontal" id="wallSouth"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="opponent east" id="eastPanel"></div>
+        </div>
+
+        <div class="youPanel">
+          <div class="youMeta" id="youMeta"></div>
+          <div class="bonusRow" id="bonusRow"></div>
+          <div class="meldRow" id="youMelds"></div>
+          <div class="hand" id="handRow"></div>
+          <div class="actionRow">
+            <div class="claimBar" id="claimBar"></div>
+            <button id="selfDrawBtn" disabled>Self Draw Win</button>
+          </div>
+          <div class="hint" id="hintLine"></div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <section class="scoreCard">
+          <h2 id="scoresTitle">Scores</h2>
+          <ul id="scoreList"></ul>
+        </section>
+
+        <section class="ruleCard">
+          <div class="ruleHeader">
+            <h2 id="rulesTitle" class="rulesTitleToggle" role="button" tabindex="0" aria-expanded="false">Fan Rules</h2>
+          </div>
+          <div id="rulesBody" class="hidden">
+            <div id="rulesOutput" class="ruleOutput"></div>
+            <h3 id="guideTitle">How to Play</h3>
+            <div id="guideOutput" class="ruleOutput"></div>
+          </div>
+        </section>
+
+        <section class="logCard">
+          <h2 id="logTitle">Log</h2>
+          <div id="logOutput" class="logOutput"></div>
+        </section>
+
+        <section class="logCard">
+          <h2 id="fanHistoryTitle">Fan History</h2>
+          <div class="historyWrap">
+            <table class="historyTable" id="fanHistoryTable">
+              <thead>
+                <tr>
+                  <th id="fanHistColHand">Hand</th>
+                  <th id="fanHistColWinner">Winner</th>
+                  <th id="fanHistColFan">Fan</th>
+                  <th id="fanHistColPatterns">Patterns</th>
+                </tr>
+              </thead>
+              <tbody id="fanHistoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="logCard">
+          <h2 id="scoreHistoryTitle">Score History</h2>
+          <div class="historyWrap">
+            <table class="historyTable" id="scoreHistoryTable">
+              <thead>
+                <tr>
+                  <th id="scoreHistColHand">Hand</th>
+                  <th id="scoreHistColWinner">Winner</th>
+                  <th id="scoreHistColDelta">Delta</th>
+                  <th id="scoreHistColTotal">Totals</th>
+                </tr>
+              </thead>
+              <tbody id="scoreHistoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+  <div id="diceOverlay" class="diceOverlay hidden">
+    <div id="dicePanel" class="dicePanel">
+      <div id="diceTitle">Rolling Dice...</div>
+      <button id="startDiceBtn" type="button">Start Roll</button>
+      <div class="diceRow">
+        <div class="die" id="die1">1</div>
+        <div class="die" id="die2">1</div>
+        <div class="die" id="die3">1</div>
+      </div>
+    </div>
+  </div>
+  <div id="congratsOverlay" class="congratsOverlay hidden">
+    <div id="congratsCard" class="congratsCard">
+      <button id="closeCongratsBtn" class="overlayCloseBtn" type="button">Close</button>
+      <div id="congratsText">恭喜食糊！</div>
+      <div id="congratsTiles" class="congratsTiles"></div>
+      <div id="congratsFansTitle" class="congratsFansTitle">番型</div>
+      <ul id="congratsFans" class="congratsFans"></ul>
+      <button id="nextMatchBtn" class="hidden" type="button">Next Match</button>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</body>
+</html>

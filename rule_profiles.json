@@ -1,0 +1,48 @@
+{
+  "香港常用(3番起糊)": {
+    "min_fan": "3",
+    "cap": "10",
+    "self_draw": true,
+    "concealed": true,
+    "flowers": "0",
+    "package_enabled": false,
+    "package_reason": "大三元",
+    "responsible_name": "責任家",
+    "flags": {
+      "rob_kong": false,
+      "kong_bloom": false,
+      "last_tile": false,
+      "kong_discard": false,
+      "small_than_five": false,
+      "big_than_five": false,
+      "all_unrelated": false,
+      "heavenly": false,
+      "earthly": false,
+      "humanly": false,
+      "four_kongs": fa    lse
+    }
+  },
+  "香港常用(5番起糊)": {
+    "min_fan": "5",
+    "cap": "13",
+    "self_draw": true,
+    "concealed": true,
+    "flowers": "0",
+    "package_enabled": false,
+    "package_reason": "大三元",
+    "responsible_name": "責任家",
+    "flags": {
+      "rob_kong": false,
+      "kong_bloom": false,
+      "last_tile": false,
+      "kong_discard": false,
+      "small_than_five": false,
+      "big_than_five": false,
+      "all_unrelated": false,
+      "heavenly": false,
+      "earthly": false,
+      "humanly": false,
+      "four_kongs": false
+    }
+  }
+}

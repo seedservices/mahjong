@@ -1,0 +1,11 @@
+﻿{
+  "name": "untitled",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hong Kong Mahjong web port",
+  "main": "index.js",
+  "scripts": {
+    "start": "py -m http.server 8000",
+    "test": "echo \"No tests configured\""
+  }
+}
