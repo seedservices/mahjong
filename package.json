@@ -1,11 +1,17 @@
-﻿{
+{
   "name": "untitled",
   "version": "1.0.0",
   "private": true,
-  "description": "Hong Kong Mahjong web port",
-  "main": "index.js",
+  "description": "Hong Kong Mahjong web port (Vite)",
+  "type": "module",
+  "main": "src/main.js",
   "scripts": {
-    "start": "py -m http.server 8000",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "echo \"No tests configured\""
+  },
+  "devDependencies": {
+    "vite": "^6.2.1"
   }
 }

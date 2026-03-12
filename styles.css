@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿:root {
+:root {
   --bg: #0f2d22;
   --panel: #163a2c;
   --panel-2: #1b4534;
@@ -996,3 +996,4 @@ button:disabled {
     min-height: auto;
   }
 }
+

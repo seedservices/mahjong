@@ -14,12 +14,15 @@ const ALL_TILES = [...BASE_TILES];
 const TILE_INDEX = Object.fromEntries(ALL_TILES.map((t, i) => [t, i]));
 
 const DEFAULT_RULES = {
-  name: "HK Common (3 fan min)",
+  name: "香港常用(3番起糊)",
   minFan: 3,
   fanCap: 10,
   selfDrawBonus: true,
   concealedBonus: true,
 };
+const RULE_PROFILE_URL = "rule_profiles.json";
+const STORAGE_RULE_PROFILES = "hkmahjong_rule_profiles_v1";
+const STORAGE_RULE_PROFILE_NAME = "hkmahjong_rule_profile_name_v1";
 const INITIAL_SCORE = 100;
 
 function buildWallTiles() {
@@ -387,8 +390,8 @@ function classifySuitType(hand) {
   return "mixed";
 }
 
-function scoreHandPatterns(hand, exposedCount, selfDraw, rules, exposedMelds, bonusTiles, locale = "en", seatWind = "E", roundWind = "E") {
-  const patterns = [];
+function scoreHandPatterns(hand, exposedCount, selfDraw, rules, exposedMelds, bonusTiles, locale = "en") {
+  const patterns = [[locale === "zh-HK" ? "\u98df\u7cca" : "Win", 1]];
   const closed = exposedCount === 0;
   if (selfDraw && rules.selfDrawBonus) patterns.push([locale === "zh-HK" ? "\u81ea\u6478" : "Self Draw", 1]);
   if (closed && rules.concealedBonus) patterns.push([locale === "zh-HK" ? "\u9580\u524d\u6e05" : "Concealed Hand", 1]);
@@ -405,24 +408,11 @@ function scoreHandPatterns(hand, exposedCount, selfDraw, rules, exposedMelds, bo
     const allMelds = [];
     if (partition) allMelds.push(...partition[1]);
     allMelds.push(...exposedMelds.map((m) => m.slice()));
-    if (allMelds.length > 0 && allMelds.every((m) => isChowMeld(m))) {
-      patterns.push([locale === "zh-HK" ? "\u5e73\u7cca" : "All Chows (Ping Hu)", 1]);
+    if (allMelds.length > 0 && allMelds.every((m) => isPungLikeMeld(m))) {
+      patterns.push([locale === "zh-HK" ? "\u5c0d\u5c0d\u7cca" : "All Pungs", 3]);
     }
-    if (allMelds.length > 0 && allMelds.every((m) => isPungLikeMeld(m))) patterns.push([locale === "zh-HK" ? "\u5c0d\u5c0d\u7cca" : "All Pungs", 3]);
-
-    let dragonSets = 0;
-    let seatWindSets = 0;
-    let roundWindSets = 0;
-    for (const meld of allMelds) {
-      if (!isPungLikeMeld(meld)) continue;
-      const t = meld[0];
-      if (DRAGONS.includes(t)) dragonSets += 1;
-      if (t === seatWind) seatWindSets += 1;
-      if (t === roundWind) roundWindSets += 1;
-    }
-    if (dragonSets) patterns.push([locale === "zh-HK" ? `\u4e09\u5143\u724c x${dragonSets}` : `Dragon Pung x${dragonSets}`, dragonSets]);
-    if (seatWindSets) patterns.push([locale === "zh-HK" ? `\u9580\u98a8\u523b x${seatWindSets}` : `Seat Wind Pung x${seatWindSets}`, seatWindSets]);
-    if (roundWindSets) patterns.push([locale === "zh-HK" ? `\u5708\u98a8\u523b x${roundWindSets}` : `Round Wind Pung x${roundWindSets}`, roundWindSets]);
+    const soeng = allMelds.reduce((sum, m) => sum + (isChowMeld(m) ? 1 : 0), 0);
+    if (soeng > 0) patterns.push([locale === "zh-HK" ? `\u4e0a x${soeng}` : `Chow x${soeng}`, soeng]);
   }
 
   const suitType = classifySuitType(allTiles);
@@ -430,19 +420,10 @@ function scoreHandPatterns(hand, exposedCount, selfDraw, rules, exposedMelds, bo
   else if (suitType === "pure_one_suit") patterns.push([locale === "zh-HK" ? "\u6e05\u4e00\u8272" : "Pure One Suit", 7]);
   else if (suitType === "mixed_one_suit") patterns.push([locale === "zh-HK" ? "\u6df7\u4e00\u8272" : "Mixed One Suit", 3]);
 
-  const seatNum = seatWind === "E" ? 1 : seatWind === "S" ? 2 : seatWind === "W" ? 3 : 4;
-  const noFlower = bonusTiles.length === 0;
-  if (noFlower) patterns.push([locale === "zh-HK" ? "\u7121\u82b1" : "No Flower", 1]);
-
-  const seatFlowerA = `F${seatNum}`;
-  const seatFlowerB = `T${seatNum}`;
-  const seatFlowerHits = bonusTiles.filter((t) => t === seatFlowerA || t === seatFlowerB).length;
-  if (seatFlowerHits) patterns.push([locale === "zh-HK" ? `\u6b63\u82b1 x${seatFlowerHits}` : `Seat Flower x${seatFlowerHits}`, seatFlowerHits]);
-
-  const hasAllFlowers = FLOWERS.every((t) => bonusTiles.includes(t));
-  const hasAllSeasons = SEASONS.every((t) => bonusTiles.includes(t));
-  const tableFlowerSets = (hasAllFlowers ? 1 : 0) + (hasAllSeasons ? 1 : 0);
-  if (tableFlowerSets) patterns.push([locale === "zh-HK" ? `\u4e00\u81fa\u82b1 x${tableFlowerSets}` : `Table Flower Set x${tableFlowerSets}`, tableFlowerSets * 2]);
+  const flowerPts = bonusTiles.filter((t) => FLOWERS.includes(t)).length;
+  const seasonPts = bonusTiles.filter((t) => SEASONS.includes(t)).length;
+  if (flowerPts) patterns.push([locale === "zh-HK" ? `\u82b1\u724c x${flowerPts}` : `Flower x${flowerPts}`, flowerPts]);
+  if (seasonPts) patterns.push([locale === "zh-HK" ? `\u5b63\u7bc0\u724c x${seasonPts}` : `Season x${seasonPts}`, seasonPts]);
 
   const total = patterns.reduce((sum, x) => sum + x[1], 0);
   return [total, patterns.map(([name, pts]) => `${name} +${pts}${locale === "zh-HK" ? "\u756a" : " fan"}`)];
@@ -453,6 +434,55 @@ function shuffleInPlace(arr) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
+}
+
+function toInt(val, fallback) {
+  const n = Number.parseInt(String(val ?? "").trim(), 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function normalizeRuleProfile(name, raw = {}) {
+  const minFan = Math.max(1, toInt(raw.min_fan ?? raw.minFan, DEFAULT_RULES.minFan));
+  const fanCap = Math.max(minFan, toInt(raw.cap ?? raw.fanCap, DEFAULT_RULES.fanCap));
+  return {
+    name,
+    minFan,
+    fanCap,
+    selfDrawBonus: Boolean(raw.self_draw ?? raw.selfDraw ?? DEFAULT_RULES.selfDrawBonus),
+    concealedBonus: Boolean(raw.concealed ?? raw.concealedBonus ?? DEFAULT_RULES.concealedBonus),
+  };
+}
+
+function loadRuleProfilesFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_RULE_PROFILES);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {
+    // Ignore.
+  }
+  return {};
+}
+
+function saveRuleProfilesToStorage(profiles) {
+  try {
+    localStorage.setItem(STORAGE_RULE_PROFILES, JSON.stringify(profiles));
+  } catch {
+    // Ignore.
+  }
+}
+
+async function fetchRuleProfiles() {
+  try {
+    const res = await fetch(RULE_PROFILE_URL, { cache: "no-store" });
+    if (!res.ok) return {};
+    const data = await res.json();
+    if (data && typeof data === "object") return data;
+  } catch {
+    // Ignore.
+  }
+  return {};
 }
 
 class MahjongWebGame {
@@ -470,17 +500,11 @@ class MahjongWebGame {
     this.botNamesZh = ["嘉明", "一鳴", "俊熙", "海濤", "永樂", "皓軒", "順發", "志宏", "家駿", "偉霖"];
     this.currentBotNames = ["Bot A", "Bot B", "Bot C"];
     this.humanDisplayName = null;
-    this.googleClientId = "";
-    this.googleAuthInitialized = false;
-    this.googleUser = null;
-    try {
-      this.googleClientId = localStorage.getItem("hkmahjong_google_client_id") || "";
-    } catch {
-      this.googleClientId = "";
-    }
     this.scores = [INITIAL_SCORE, INITIAL_SCORE, INITIAL_SCORE, INITIAL_SCORE];
     this.lastScoreDelta = [0, 0, 0, 0];
     this.rules = { ...DEFAULT_RULES };
+    this.ruleProfiles = {};
+    this.ruleProfileName = DEFAULT_RULES.name;
     this.botDifficulty = "medium";
     this.roundDice = [1, 1, 1];
     this.wallStartStack = 0;
@@ -495,8 +519,7 @@ class MahjongWebGame {
     this.calledDiscardIndices = new Set();
     this.logs = [];
     this.revealAllHands = false;
-    this.revealAllOnEnd = true;
-    this.enableCelebration = true;
+    this.enableCelebration = false;
     this.congratsTimer = null;
     this.diceCloseRequested = false;
     this.diceCanClose = false;
@@ -526,9 +549,6 @@ class MahjongWebGame {
       homeBackColor: document.getElementById("homeBackColor"),
       startGameBtn: document.getElementById("startGameBtn"),
       titleText: document.getElementById("titleText"),
-      googleLoginBtn: document.getElementById("googleLoginBtn"),
-      googleLogoutBtn: document.getElementById("googleLogoutBtn"),
-      googleUserChip: document.getElementById("googleUserChip"),
       scoresTitle: document.getElementById("scoresTitle"),
       resetScoresBtn: document.getElementById("resetScoresBtn"),
       rulesTitle: document.getElementById("rulesTitle"),
@@ -559,17 +579,17 @@ class MahjongWebGame {
       statusLine: document.getElementById("statusLine"),
       configPanel: document.getElementById("configPanel"),
       cfgDifficultyLabel: document.getElementById("cfgDifficultyLabel"),
+      cfgRuleProfileLabel: document.getElementById("cfgRuleProfileLabel"),
       cfgMinFanLabel: document.getElementById("cfgMinFanLabel"),
       cfgCapLabel: document.getElementById("cfgCapLabel"),
-      cfgRevealLabel: document.getElementById("cfgRevealLabel"),
-      cfgCelebrateLabel: document.getElementById("cfgCelebrateLabel"),
-      cfgGoogleClientIdLabel: document.getElementById("cfgGoogleClientIdLabel"),
+      cfgSelfDrawLabel: document.getElementById("cfgSelfDrawLabel"),
+      cfgConcealedLabel: document.getElementById("cfgConcealedLabel"),
       difficultySelect: document.getElementById("difficultySelect"),
       minFanInput: document.getElementById("minFanInput"),
       fanCapInput: document.getElementById("fanCapInput"),
-      alwaysRevealInput: document.getElementById("alwaysRevealInput"),
-      celebrateInput: document.getElementById("celebrateInput"),
-      googleClientIdInput: document.getElementById("googleClientIdInput"),
+      ruleProfileSelect: document.getElementById("ruleProfileSelect"),
+      selfDrawBonusInput: document.getElementById("selfDrawBonusInput"),
+      concealedBonusInput: document.getElementById("concealedBonusInput"),
       applyConfigBtn: document.getElementById("applyConfigBtn"),
       wallInfo: document.getElementById("wallInfo"),
       tableEl: document.querySelector(".table"),
@@ -625,8 +645,6 @@ class MahjongWebGame {
         }
       });
     }
-    if (this.dom.googleLoginBtn) this.dom.googleLoginBtn.addEventListener("click", () => this.googleLogin());
-    if (this.dom.googleLogoutBtn) this.dom.googleLogoutBtn.addEventListener("click", () => this.googleLogout());
     this.dom.selfDrawBtn.addEventListener("click", () => this.humanSelfDrawWin());
     if (this.dom.nextMatchBtn) this.dom.nextMatchBtn.addEventListener("click", () => this.startNextMatch());
     this.dom.homeBtn.addEventListener("click", () => this.showHome());
@@ -667,8 +685,15 @@ class MahjongWebGame {
     this.setTheme(this.theme);
     this.setTileBackColor(this.tileBackColor);
     this.updateStaticText();
-    this.renderGoogleAuthUI();
     this.scheduleBoardLayout();
+  }
+
+  async init() {
+    await this.loadRuleProfiles();
+    this.applyRuleProfile(this.ruleProfileName);
+    this.renderRuleProfiles();
+    this.syncConfigPanel();
+    this.updateStaticText();
   }
 
   scheduleBoardLayout() {
@@ -706,13 +731,9 @@ class MahjongWebGame {
       theme: "Theme",
       backColor: "Back Tile Color",
       startGame: "Start Game",
-      googleLogin: "Google Login",
-      googleLogout: "Logout",
-      googleClientId: "Google Client ID",
-      googleSdkMissing: "Google SDK not available.",
-      googleClientIdMissing: "Google Client ID is empty. Set it in Config first.",
-      googleInitFailed: "Google login init failed.",
-      loggedOutGoogle: "Google account signed out.",
+      ruleProfile: "Rule Profile",
+      selfDrawBonus: "Self-draw bonus",
+      concealedBonus: "Concealed bonus",
       home: "Home",
       config: "Config",
       apply: "Apply",
@@ -777,10 +798,11 @@ class MahjongWebGame {
       difficultyMedium: "Medium",
       difficultyHard: "Hard",
       cfgDifficulty: "Difficulty",
+      cfgRuleProfile: "Rule Profile",
       cfgMinFan: "Min Fan",
       cfgFanCap: "Fan Cap",
-      cfgRevealAll: "Reveal all tiles at round end",
-      cfgCelebrate: "Celebrate winner",
+      cfgSelfDraw: "Self-draw bonus",
+      cfgConcealed: "Concealed bonus",
       close: "Close",
       configApplied: "Configuration updated.",
       congrats: "Congratulations {player}! {fan} fan",
@@ -815,13 +837,9 @@ class MahjongWebGame {
       theme: "主題",
       backColor: "牌背顏色",
       startGame: "開始遊戲",
-      googleLogin: "Google 登入",
-      googleLogout: "登出",
-      googleClientId: "Google Client ID",
-      googleSdkMissing: "未能載入 Google 登入 SDK。",
-      googleClientIdMissing: "Google Client ID 為空，請先在設定輸入。",
-      googleInitFailed: "Google 登入初始化失敗。",
-      loggedOutGoogle: "已登出 Google 帳戶。",
+      ruleProfile: "房規",
+      selfDrawBonus: "\u81ea\u6478\u52a0\u756a",
+      concealedBonus: "\u9580\u524d\u6e05\u52a0\u756a",
       home: "主畫面",
       scores: "分數",
       resetScores: "重置分數",
@@ -886,10 +904,11 @@ class MahjongWebGame {
       config: "設定",
       apply: "套用",
       cfgDifficulty: "難度",
-      cfgMinFan: "最低番數",
-      cfgFanCap: "番數上限",
-      cfgRevealAll: "局結束時顯示全部手牌",
-      cfgCelebrate: "食糊祝賀動畫",
+      cfgRuleProfile: "\u623f\u898f",
+      cfgMinFan: "\u6700\u4f4e\u756a\u6578",
+      cfgFanCap: "\u756a\u6578\u4e0a\u9650",
+      cfgSelfDraw: "\u81ea\u6478\u52a0\u756a",
+      cfgConcealed: "\u9580\u524d\u6e05\u52a0\u756a",
       close: "關閉",
       configApplied: "設定已更新。",
       congrats: "恭喜 {player}！{fan} 番",
@@ -929,8 +948,6 @@ class MahjongWebGame {
     this.dom.homeThemeLabel.textContent = this.tr("theme");
     this.dom.homeBackLabel.textContent = this.tr("backColor");
     this.dom.startGameBtn.textContent = this.tr("startGame");
-    if (this.dom.googleLoginBtn) this.dom.googleLoginBtn.textContent = this.tr("googleLogin");
-    if (this.dom.googleLogoutBtn) this.dom.googleLogoutBtn.textContent = this.tr("googleLogout");
     this.dom.scoresTitle.textContent = this.tr("scores");
     if (this.dom.resetScoresBtn) this.dom.resetScoresBtn.textContent = this.tr("resetScores");
     if (this.dom.rulesTitle) this.dom.rulesTitle.textContent = this.tr("fanRules");
@@ -954,11 +971,11 @@ class MahjongWebGame {
     this.dom.selfDrawBtn.textContent = this.tr("selfDrawWin");
     if (this.dom.nextMatchBtn) this.dom.nextMatchBtn.textContent = this.tr("nextMatch");
     this.dom.cfgDifficultyLabel.textContent = this.tr("cfgDifficulty");
+    if (this.dom.cfgRuleProfileLabel) this.dom.cfgRuleProfileLabel.textContent = this.tr("cfgRuleProfile");
     this.dom.cfgMinFanLabel.textContent = this.tr("cfgMinFan");
     this.dom.cfgCapLabel.textContent = this.tr("cfgFanCap");
-    this.dom.cfgRevealLabel.textContent = this.tr("cfgRevealAll");
-    this.dom.cfgCelebrateLabel.textContent = this.tr("cfgCelebrate");
-    if (this.dom.cfgGoogleClientIdLabel) this.dom.cfgGoogleClientIdLabel.textContent = this.tr("googleClientId");
+    if (this.dom.cfgSelfDrawLabel) this.dom.cfgSelfDrawLabel.textContent = this.tr("cfgSelfDraw");
+    if (this.dom.cfgConcealedLabel) this.dom.cfgConcealedLabel.textContent = this.tr("cfgConcealed");
     this.dom.applyConfigBtn.textContent = this.tr("apply");
     this.dom.congratsFansTitle.textContent = this.tr("fanBreakdown");
     if (this.dom.startDiceBtn) this.dom.startDiceBtn.textContent = this.tr("startRoll");
@@ -966,7 +983,56 @@ class MahjongWebGame {
     if (this.dom.closeCongratsBtn) this.dom.closeCongratsBtn.textContent = this.tr("close");
     this.renderRulesGuide();
     if (this.dom.calcOutput && !this.dom.calcOutput.textContent.trim()) this.dom.calcOutput.textContent = this.tr("calcWaiting");
-    this.renderGoogleAuthUI();
+    this.renderRuleProfiles();
+  }
+
+  async loadRuleProfiles() {
+    const remote = await fetchRuleProfiles();
+    const local = loadRuleProfilesFromStorage();
+    const merged = { ...remote, ...local };
+    if (!merged[DEFAULT_RULES.name]) {
+      merged[DEFAULT_RULES.name] = {
+        min_fan: String(DEFAULT_RULES.minFan),
+        cap: String(DEFAULT_RULES.fanCap),
+        self_draw: DEFAULT_RULES.selfDrawBonus,
+        concealed: DEFAULT_RULES.concealedBonus,
+      };
+    }
+    this.ruleProfiles = merged;
+    const storedName = (() => {
+      try {
+        return localStorage.getItem(STORAGE_RULE_PROFILE_NAME) || "";
+      } catch {
+        return "";
+      }
+    })();
+    this.ruleProfileName = merged[storedName] ? storedName : this.rules.name;
+  }
+
+  applyRuleProfile(name) {
+    const profile = this.ruleProfiles[name] || this.ruleProfiles[DEFAULT_RULES.name] || {};
+    this.rules = normalizeRuleProfile(name, profile);
+    this.ruleProfileName = this.rules.name;
+  }
+
+  renderRuleProfiles() {
+    if (!this.dom.ruleProfileSelect) return;
+    const names = Object.keys(this.ruleProfiles || {});
+    if (!names.length) return;
+    this.dom.ruleProfileSelect.innerHTML = "";
+    for (const name of names) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      this.dom.ruleProfileSelect.appendChild(opt);
+    }
+    this.dom.ruleProfileSelect.value = this.ruleProfileName;
+    this.dom.ruleProfileSelect.onchange = () => {
+      const next = this.dom.ruleProfileSelect.value;
+      this.applyRuleProfile(next);
+      this.syncConfigPanel();
+      this.render();
+    };
   }
 
   toggleRulesVisibility(force) {
@@ -1016,11 +1082,11 @@ class MahjongWebGame {
 
   syncConfigPanel() {
     this.dom.difficultySelect.value = this.botDifficulty;
+    if (this.dom.ruleProfileSelect) this.dom.ruleProfileSelect.value = this.ruleProfileName;
     this.dom.minFanInput.value = String(this.rules.minFan);
     this.dom.fanCapInput.value = String(this.rules.fanCap);
-    this.dom.alwaysRevealInput.checked = this.revealAllOnEnd;
-    this.dom.celebrateInput.checked = this.enableCelebration;
-    if (this.dom.googleClientIdInput) this.dom.googleClientIdInput.value = this.googleClientId;
+    if (this.dom.selfDrawBonusInput) this.dom.selfDrawBonusInput.checked = !!this.rules.selfDrawBonus;
+    if (this.dom.concealedBonusInput) this.dom.concealedBonusInput.checked = !!this.rules.concealedBonus;
   }
 
   toggleConfigPanel() {
@@ -1033,20 +1099,24 @@ class MahjongWebGame {
     const minFan = Math.max(1, Math.min(13, Number.parseInt(this.dom.minFanInput.value, 10) || 3));
     const rawCap = Math.max(1, Math.min(13, Number.parseInt(this.dom.fanCapInput.value, 10) || 10));
     const fanCap = Math.max(minFan, rawCap);
+    const profileName = this.dom.ruleProfileSelect && this.dom.ruleProfileSelect.value
+      ? this.dom.ruleProfileSelect.value
+      : this.rules.name;
+    const selfDrawBonus = this.dom.selfDrawBonusInput ? !!this.dom.selfDrawBonusInput.checked : this.rules.selfDrawBonus;
+    const concealedBonus = this.dom.concealedBonusInput ? !!this.dom.concealedBonusInput.checked : this.rules.concealedBonus;
     this.botDifficulty = ["easy", "medium", "hard"].includes(diff) ? diff : "medium";
-    this.rules.minFan = minFan;
-    this.rules.fanCap = fanCap;
-    this.rules.name = `HK Common (${this.rules.minFan} fan min)`;
-    this.revealAllOnEnd = this.dom.alwaysRevealInput.checked;
-    this.enableCelebration = this.dom.celebrateInput.checked;
-    const newClientId = this.dom.googleClientIdInput ? this.dom.googleClientIdInput.value.trim() : this.googleClientId;
-    if (newClientId !== this.googleClientId) {
-      this.googleClientId = newClientId;
-      this.googleAuthInitialized = false;
-      try {
-        localStorage.setItem("hkmahjong_google_client_id", this.googleClientId);
-      } catch {}
-    }
+    this.ruleProfileName = profileName;
+    this.ruleProfiles[profileName] = {
+      min_fan: String(minFan),
+      cap: String(fanCap),
+      self_draw: selfDrawBonus,
+      concealed: concealedBonus,
+    };
+    saveRuleProfilesToStorage(this.ruleProfiles);
+    try {
+      localStorage.setItem(STORAGE_RULE_PROFILE_NAME, this.ruleProfileName);
+    } catch {}
+    this.rules = normalizeRuleProfile(profileName, this.ruleProfiles[profileName]);
     this.syncConfigPanel();
     this.dom.configPanel.classList.add("hidden");
     this.log(this.tr("configApplied"));
@@ -1189,81 +1259,6 @@ class MahjongWebGame {
     return this.currentBotNames[idx - 1] || `Bot ${idx}`;
   }
 
-  decodeJwtPayload(credential) {
-    try {
-      const parts = credential.split(".");
-      if (parts.length < 2) return null;
-      const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const json = decodeURIComponent(atob(b64).split("").map((c) => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`).join(""));
-      return JSON.parse(json);
-    } catch {
-      return null;
-    }
-  }
-
-  initGoogleAuth() {
-    if (this.googleAuthInitialized) return true;
-    if (!window.google || !window.google.accounts || !window.google.accounts.id) {
-      this.log(this.tr("googleSdkMissing"));
-      return false;
-    }
-    if (!this.googleClientId) {
-      this.log(this.tr("googleClientIdMissing"));
-      return false;
-    }
-    try {
-      window.google.accounts.id.initialize({
-        client_id: this.googleClientId,
-        callback: (resp) => {
-          const payload = this.decodeJwtPayload(resp.credential || "");
-          if (!payload) return;
-          this.googleUser = payload;
-          this.humanDisplayName = payload.name || payload.email || this.tr("playerYou");
-          this.renderGoogleAuthUI();
-          this.render();
-        },
-      });
-      this.googleAuthInitialized = true;
-      return true;
-    } catch {
-      this.log(this.tr("googleInitFailed"));
-      return false;
-    }
-  }
-
-  googleLogin() {
-    if (!this.initGoogleAuth()) return;
-    window.google.accounts.id.prompt();
-  }
-
-  googleLogout() {
-    if (window.google && window.google.accounts && window.google.accounts.id) {
-      window.google.accounts.id.disableAutoSelect();
-    }
-    this.googleUser = null;
-    this.humanDisplayName = null;
-    this.renderGoogleAuthUI();
-    this.log(this.tr("loggedOutGoogle"));
-    this.render();
-  }
-
-  renderGoogleAuthUI() {
-    if (!this.dom.googleLoginBtn || !this.dom.googleLogoutBtn || !this.dom.googleUserChip) return;
-    const hasUser = !!this.googleUser;
-    this.dom.googleLoginBtn.classList.toggle("hidden", hasUser);
-    this.dom.googleLogoutBtn.classList.toggle("hidden", !hasUser);
-    this.dom.googleUserChip.classList.toggle("hidden", !hasUser);
-    if (!hasUser) {
-      this.dom.googleUserChip.innerHTML = "";
-      return;
-    }
-    const name = this.googleUser.name || this.googleUser.email || this.tr("playerYou");
-    const pic = this.googleUser.picture || "";
-    this.dom.googleUserChip.innerHTML = pic
-      ? `<img src="${pic}" alt="user"><span>${name}</span>`
-      : `<span>${name}</span>`;
-  }
-
   difficultyLabel() {
     const key = this.botDifficulty === "easy" ? "difficultyEasy" : this.botDifficulty === "hard" ? "difficultyHard" : "difficultyMedium";
     return this.tr(key);
@@ -1311,60 +1306,54 @@ class MahjongWebGame {
     const fanCap = this.rules.fanCap;
     const minFan = this.rules.minFan;
     const rulesZh = [
-      `食糊準則：標準為四組一對；例外可用十三么、七對子`,
-      `起糊番數：至少 ${minFan} 番（可於設定更改）`,
-      `封頂：${fanCap} 番`,
-      `平糊 +1番`,
-      `自摸 +1番`,
-      `門前清 +1番`,
-      `對對糊 +3番`,
-      `三元牌刻子/槓子 每組 +1番`,
-      `門風刻子/槓子 每組 +1番`,
-      `圈風刻子/槓子 每組 +1番`,
-      `混一色 +3番`,
-      `清一色 +7番`,
-      `字一色 +13番`,
-      `七對子 +4番`,
-      `十三么 +13番`,
-      `無花 +1番`,
-      `正花 每張 +1番`,
-      `一臺花(四花/四季) 每套 +2番`,
-      `註：本頁只列本程式已實作的牌型與計番`,
+      `\u98df\u7cca\u6e96\u5247\uff1a\u6a19\u6e96\u70ba\u56db\u7d44\u4e00\u5c0d\uff1b\u4f8b\u5916\u53ef\u7528\u5341\u4e09\u4e48\u3001\u4e03\u5c0d\u5b50`,
+      `\u8d77\u7cca\u756a\u6578\uff1a\u81f3\u5c11 ${minFan} \u756a\uff08\u53ef\u65bc\u8a2d\u5b9a\u66f4\u6539\uff09`,
+      `\u5c01\u9802\uff1a${fanCap} \u756a`,
+      `\u98df\u7cca +1\u756a`,
+      `\u81ea\u6478 +1\u756a\uff08\u53ef\u958b\u95dc\uff09`,
+      `\u9580\u524d\u6e05 +1\u756a\uff08\u53ef\u958b\u95dc\uff09`,
+      `\u5c0d\u5c0d\u7cca +3\u756a`,
+      `\u4e0a (\u9806\u5b50) \u6bcf\u7d44 +1\u756a`,
+      `\u6df7\u4e00\u8272 +3\u756a`,
+      `\u6e05\u4e00\u8272 +7\u756a`,
+      `\u5b57\u4e00\u8272 +13\u756a`,
+      `\u4e03\u5c0d\u5b50 +4\u756a`,
+      `\u5341\u4e09\u4e48 +13\u756a`,
+      `\u82b1\u724c \u6bcf\u5f35 +1\u756a`,
+      `\u5b63\u7bc0\u724c \u6bcf\u5f35 +1\u756a`,
+      `\u8a3b\uff1a\u672c\u9801\u53ea\u5217\u672c\u7a0b\u5f0f\u5df2\u5be6\u4f5c\u7684\u724c\u578b\u8207\u8a08\u756a`,
     ];
     const rulesEn = [
       "Win rule: standard 4 melds + 1 pair; exceptions include Thirteen Orphans / Seven Pairs",
       `Minimum to win: ${minFan} fan (configurable)`,
       `Fan cap: ${fanCap}`,
-      "All Chows (Ping Hu) +1 fan",
+      "Win +1 fan",
       "Self Draw +1 fan",
       "Concealed Hand +1 fan",
       "All Pungs +3 fan",
-      "Each Dragon pung/kong +1 fan",
-      "Each Seat wind pung/kong +1 fan",
-      "Each Round wind pung/kong +1 fan",
+      "Each Chow +1 fan",
       "Mixed One Suit +3 fan",
       "Pure One Suit +7 fan",
       "All Honors +13 fan",
       "Seven Pairs +4 fan",
       "Thirteen Orphans +13 fan",
-      "No Flower +1 fan",
-      "Seat Flower +1 fan each",
-      "Table Flower Set (all 4 flowers / all 4 seasons) +2 fan each set",
+      "Flower tiles +1 fan each",
+      "Season tiles +1 fan each",
       "Note: this list only shows rules currently implemented in this app.",
     ];
     const guideZh = [
-      "1. 開局擲骰，先定開門位。",
-      "2. 玩家順序按麻雀座次行牌，輪到你時先摸後打。",
-      "3. 可宣告上/碰/槓/食糊；若無可宣告則由下家繼續。",
-      "4. 每次食糊會顯示番型明細與總番數。",
-      "5. 每按「下一局」會轉門風；每四局自動轉圈風。",
+      "1. \u958b\u5c40\u5f8c\u6309\u5ea7\u6b21\u884c\u724c\uff0c\u8f2a\u5230\u4f60\u6642\u5148\u6478\u5f8c\u6253\u3002",
+      "2. \u53ef\u5ba3\u544a\u5403/\u78b0/\u69d3/\u98df\u7cca\uff1b\u82e5\u7121\u53ef\u5ba3\u544a\u5247\u7531\u4e0b\u5bb6\u7e7c\u7e8c\u3002",
+      "3. \u7576\u81ea\u6478\u53ef\u98df\u7cca\u6642\uff0c\u6309\u300c\u548c\u724c\uff08\u81ea\u6478\uff09\u300d\u7d50\u675f\u672c\u5c40\u3002",
+      "4. \u672c\u5c40\u7d50\u675f\u6703\u986f\u793a\u756a\u578b\u660e\u7d30\u8207\u7e3d\u756a\u6578\u3002",
+      "5. \u6309\u300c\u65b0\u958b\u4e00\u5c40\u300d\u91cd\u65b0\u767c\u724c\u3002",
     ];
     const guideEn = [
-      "1. Dice decide the break side and start column.",
-      "2. Turn order follows Mahjong seats; draw then discard.",
-      "3. Claims available: Chow/Pong/Kong/Ron when legal.",
+      "1. Turn order follows Mahjong seats; draw then discard.",
+      "2. Claims available: Chow/Pong/Kong/Ron when legal.",
+      "3. If self-draw is available, press the win button to end the hand.",
       "4. Win summary shows full fan breakdown.",
-      "5. Each Next Match rotates seat winds; every 4 hands the prevailing wind advances.",
+      "5. Press New Round to redeal.",
     ];
     const rules = this.locale === "zh-HK" ? rulesZh : rulesEn;
     const guide = this.locale === "zh-HK" ? guideZh : guideEn;
@@ -1677,9 +1666,6 @@ class MahjongWebGame {
     const tiles = player.hand.slice();
     if (extraTile) tiles.push(extraTile);
     if (!isWinWithOpenMelds(tiles, player.exposedMelds.length)) return [false, 0, []];
-    const idx = this.players.indexOf(player);
-    const seatWind = this.seatWindTileByIndex(idx >= 0 ? idx : 0);
-    const roundWind = this.roundWindTile();
     let [fan, lines] = scoreHandPatterns(
       tiles,
       player.exposedMelds.length,
@@ -1688,8 +1674,6 @@ class MahjongWebGame {
       player.exposedMelds,
       player.bonusTiles,
       this.locale,
-      seatWind,
-      roundWind,
     );
     if (fan > this.rules.fanCap) lines.push(this.tr("fanCap", { cap: this.rules.fanCap }));
     fan = Math.min(fan, this.rules.fanCap);
@@ -2060,7 +2044,7 @@ class MahjongWebGame {
     this.roundWinnerIdx = winnerIdx;
     this.handCounter += 1;
     this.pendingClaim = null;
-    this.revealAllHands = this.revealAllOnEnd || winnerIdx >= 0;
+    this.revealAllHands = winnerIdx >= 0 && winnerIdx !== 0;
     this.log(msg);
     this.lastScoreDelta = [0, 0, 0, 0];
     if (winnerIdx >= 0) {
@@ -2452,4 +2436,8 @@ class MahjongWebGame {
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => new MahjongWebGame());
+window.addEventListener("DOMContentLoaded", () => {
+  const game = new MahjongWebGame();
+  game.init();
+});
+

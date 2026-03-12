@@ -1,51 +1,26 @@
-# 香港麻雀對局遊戲（含 Bot）
+# Hong Kong Mahjong (Web)
 
-這不是計算器，現在是可直接玩的香港麻雀單局遊戲：
-- 你（玩家） vs 3 位 Bot
-- 完整摸牌／打牌輪替
-- Bot 自動決策打牌
-- 支援自摸與榮和（打出即判斷是否被胡）
-- 一鍵重新開局
-- 桌面化麻雀牌桌版面（綠色桌面、四家位置、中間棄牌區）
-- 中間棄牌區會以紅框高亮「最新棄牌」
-- 已內建牌面圖檔（`assets/tiles/*.png`），桌面與手牌使用圖像顯示
+Single-hand Hong Kong Mahjong playable in the browser: 1 human vs 3 bots. Built with vanilla JS and Vite.
 
-## PC 相容性
+## Features
+- Full draw/discard flow with chi/pong/kong/ron
+- Simplified fan scoring with configurable minimum and cap
+- Bot difficulty (easy/medium/hard)
+- Rule profiles loaded from `public/rule_profiles.json` and persisted in localStorage
+- Desktop and mobile layouts (landscape preferred)
 
-本程式使用 Kivy，可在 Windows / macOS / Linux 執行。
-
-## Windows 執行方式
-
-1. 建立並啟用虛擬環境（建議）
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+## Development
+```bash
+npm install
+npm run dev
 ```
 
-2. 安裝相依套件
-```powershell
-pip install -r requirements.txt
+## Build
+```bash
+npm run build
+npm run preview
 ```
 
-3. 啟動
-```powershell
-python app.py
-```
+## Assets
+Static assets live under `public/assets/` and are referenced at runtime via `/assets/...`.
 
-或雙擊 `run_windows.bat`。
-
-## 遊戲操作
-
-- 輪到你時，會先摸牌到 14 張。
-- 點手牌按鈕即可打牌（右側會分離顯示剛摸到的牌，並高亮）。
-- 若已成牌，可按 `和牌（自摸）` 結束本局。
-- Bot 回合會自動進行；若任何玩家可榮和該棄牌，會立即結束本局。
-- 按 `新開一局` 可重新發牌。
-- 可宣告吃／碰／槓／榮和時，畫面會在宣告列顯示可按按鈕。
-
-## 目前規則範圍
-
-- 和牌判定：一般 4 面子 1 對、七對子、十三么。
-- 已包含吃／碰／槓／榮和宣告流程（人類玩家可手動宣告，Bot 會自動判斷）。
-- 已包含基本 Bot 策略（偏向保留搭子、對子與刻子）。
-- 暫未加入完整番數計分介面（可再擴充）。
