@@ -1527,7 +1527,7 @@ class MahjongWebGame {
     if (this.dom.startDiceBtn) this.dom.startDiceBtn.classList.add("hidden");
     this.dom.diceTitle.textContent = this.tr("rollingDice");
     for (const d of diceEls) d.classList.add("rolling");
-    let ticks = 24;
+    let ticks = 12;
     return new Promise((resolve) => {
       const timer = setInterval(() => {
         this.roundDice = [1, 2, 3].map(() => 1 + Math.floor(Math.random() * 6));

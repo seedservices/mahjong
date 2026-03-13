@@ -264,11 +264,14 @@ button:disabled {
 }
 
 #northPanel {
-  min-height: 115px;
-  max-height: 115px;
+  min-height: 0;
+  max-height: none;
   overflow: hidden;
-  padding-bottom: 10px;
+  padding-bottom: 6px;
   box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 0;
 }
 
 .centerZone {
@@ -503,7 +506,7 @@ button:disabled {
   padding: 6px;
   border: 1px dashed var(--line);
   border-radius: 8px;
-  min-height: 90px;
+  min-height: 0;
 }
 
 .tile {
@@ -649,7 +652,10 @@ button:disabled {
 }
 
 #northPanel .opponentOpened {
-  margin-top: 5px;
+  margin-top: 0;
+  margin-bottom: 3px;
+  min-height: 46px;
+  align-content: center;
 }
 
 .opponentClosedNorth {
@@ -657,9 +663,13 @@ button:disabled {
   flex-wrap: wrap;
   gap: 4px;
   overflow: hidden;
-  min-height: 88px;
-  align-content: flex-start;
-  margin-bottom: 6px;
+  min-height: 46px;
+  align-content: center;
+  margin-bottom: 0;
+}
+
+#northPanel .meta {
+  margin-bottom: 4px;
 }
 
 .sideOpened {
