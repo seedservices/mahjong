@@ -118,14 +118,16 @@
         </div>
 
         <div class="youPanel">
-          <div class="youMeta" id="youMeta"></div>
+          <div class="youHeader">
+            <div class="youMeta" id="youMeta"></div>
+            <div class="actionRow">
+              <div class="claimBar" id="claimBar"></div>
+              <button id="selfDrawBtn" disabled>Self Draw Win</button>
+            </div>
+          </div>
           <div class="bonusRow" id="bonusRow"></div>
           <div class="meldRow" id="youMelds"></div>
           <div class="hand" id="handRow"></div>
-          <div class="actionRow">
-            <div class="claimBar" id="claimBar"></div>
-            <button id="selfDrawBtn" disabled>Self Draw Win</button>
-          </div>
           <div class="hint" id="hintLine"></div>
         </div>
       </section>
@@ -196,6 +198,12 @@
       <div id="congratsFansTitle" class="congratsFansTitle">番型</div>
       <ul id="congratsFans" class="congratsFans"></ul>
       <button id="nextMatchBtn" class="hidden" type="button">Next Match</button>
+    </div>
+  </div>
+  <div id="portraitOverlay" class="portraitOverlay hidden">
+    <div class="portraitCard">
+      <h2>Landscape Required</h2>
+      <p>This game is optimized for landscape orientation. Please rotate your device.</p>
     </div>
   </div>
   <div id="diceOverlay" class="diceOverlay hidden">

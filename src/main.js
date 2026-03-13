@@ -632,6 +632,7 @@ class MahjongWebGame {
       congratsFans: document.getElementById("congratsFans"),
       congratsCard: document.getElementById("congratsCard"),
       closeCongratsBtn: document.getElementById("closeCongratsBtn"),
+      portraitOverlay: document.getElementById("portraitOverlay"),
     };
 
     this.dom.newRoundBtn.addEventListener("click", () => this.startRound());
@@ -678,14 +679,26 @@ class MahjongWebGame {
     this.dom.homeThemeSelect.addEventListener("change", (e) => this.setTheme(e.target.value));
     this.dom.tileBackColor.addEventListener("input", (e) => this.setTileBackColor(e.target.value));
     this.dom.homeBackColor.addEventListener("input", (e) => this.setTileBackColor(e.target.value));
-    window.addEventListener("resize", () => this.scheduleBoardLayout());
+    window.addEventListener("resize", () => {
+      this.updatePortraitOverlay();
+      this.scheduleBoardLayout();
+    });
+    window.addEventListener("orientationchange", () => this.updatePortraitOverlay());
 
     this.dom.app.classList.add("hidden");
     this.syncConfigPanel();
     this.setTheme(this.theme);
     this.setTileBackColor(this.tileBackColor);
     this.updateStaticText();
+    this.updatePortraitOverlay();
     this.scheduleBoardLayout();
+  }
+
+  updatePortraitOverlay() {
+    if (!this.dom.portraitOverlay) return;
+    const isPortrait = window.innerHeight >= window.innerWidth;
+    const show = isPortrait;
+    this.dom.portraitOverlay.classList.toggle("hidden", !show);
   }
 
   async init() {
@@ -708,6 +721,13 @@ class MahjongWebGame {
     const centerZone = this.dom.centerZone;
     const centerCol = this.dom.centerCol;
     if (!centerZone || !centerCol) return;
+    if (window.innerWidth <= 900) {
+      centerZone.style.width = "100%";
+      centerZone.style.height = "auto";
+      centerZone.style.minHeight = "260px";
+      centerZone.style.margin = "0";
+      return;
+    }
     const colH = centerCol.clientHeight;
     if (!colH) return;
     const northH = this.dom.northPanel ? this.dom.northPanel.offsetHeight : 0;
