@@ -220,7 +220,7 @@ button:disabled {
   padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   overflow: hidden;
 }
 
@@ -241,7 +241,7 @@ button:disabled {
 .midRow {
   display: grid;
   grid-template-columns: 120px 1fr 120px;
-  gap: 8px;
+  gap: 6px;
   align-items: stretch;
   flex: 1 1 auto;
   height: 100%;
@@ -256,7 +256,7 @@ button:disabled {
 .centerCol {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: 0;
   min-width: 0;
   height: 100%;
   min-height: 0;
@@ -281,7 +281,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   width: 100%;
-  min-height: 320px;
+  min-height: 0;
   height: 100%;
   margin: 0;
   padding: 8px;
@@ -289,6 +289,91 @@ button:disabled {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
+}
+
+.tableOpponents {
+  position: absolute;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tableOpponents .opponent {
+  position: absolute;
+  background: transparent;
+  border: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.tableOpponents .opponent.onTable {
+  display: block !important;
+}
+
+.tableOpponents .opponent .meta {
+  display: none;
+}
+
+.tableOpponents .opponent.north {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 420px;
+}
+
+.tableOpponents .opponent.west {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+}
+
+.tableOpponents .opponent.east {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+}
+
+.tableOpponents .west,
+.tableOpponents .east {
+  display: block !important;
+}
+
+.tableOpponents .tile.small.opponentTile,
+.tableOpponents .tile.back.small.opponentTile {
+  width: 10px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #b38d3b;
+}
+
+.tableOpponents .tile.small.sideRotated,
+.tableOpponents .tile.back.small.sideRotated {
+  width: 16px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid #b38d3b;
+}
+
+.tableOpponents .opponentOpened,
+.tableOpponents .opponentClosedNorth {
+  gap: 0;
+}
+
+.tableOpponents .sideTileLine {
+  gap: 0;
+}
+
+.tableOpponents .sideOpened,
+.tableOpponents .sideOpened .meldStrip.vertical {
+  gap: 0;
+}
+
+.opponentPlaceholder {
+  display: none;
 }
 
 .meta {
@@ -302,6 +387,8 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  position: relative;
+  z-index: 2;
 }
 
 .wallDice {
@@ -327,6 +414,8 @@ button:disabled {
   flex: 1 1 auto;
   min-height: 0;
   justify-content: flex-start;
+  position: relative;
+  z-index: 1;
 }
 
 .wallMiddle {
@@ -1009,7 +1098,33 @@ button:disabled {
 @media (max-width: 1200px) {
   .boardGrid {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "table"
+      "sidebar";
     min-height: 0;
+  }
+
+  .midRow {
+    grid-template-columns: auto 1fr auto;
+    gap: 0;
+  }
+
+  .west,
+  .east {
+    display: block;
+  }
+
+  .midRow > .west {
+    justify-self: start;
+  }
+
+  .midRow > .east {
+    justify-self: end;
+  }
+
+  .tableOpponents {
+    display: block;
   }
 
   .homeControls {
@@ -1019,6 +1134,115 @@ button:disabled {
   .configPanel {
     grid-template-columns: 1fr;
   }
+
+  .centerZone {
+    padding: 12px;
+    min-height: 180px;
+  }
+
+  .wallRing {
+    margin: 18px 12px 14px;
+  }
+
+  .centerCol {
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .midRow {
+    min-height: 220px;
+  }
+
+  #northPanel,
+  #westPanel,
+  #eastPanel {
+    padding: 4px;
+    min-height: 0;
+    height: auto;
+  }
+
+  #northPanel {
+    max-height: 120px;
+  }
+
+  #westPanel,
+  #eastPanel {
+    max-height: none;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .opponentClosedNorth,
+  .sideBody.west,
+  .sideBody.east {
+    min-height: 0;
+  }
+
+  #northPanel .opponentOpened,
+  .opponentClosedNorth {
+    min-height: 0;
+    align-content: flex-start;
+  }
+
+  .sideBody.west,
+  .sideBody.east {
+    margin-top: 0;
+  }
+
+  .sideBody.west .sideTileLine,
+  .sideBody.east .sideTileLine {
+    height: auto;
+  }
+
+  .sideBody {
+    column-gap: 4px;
+    width: auto;
+  }
+
+  .opponent .tile.small.opponentTile,
+  .opponent .tile.back.small.opponentTile {
+    width: 10px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid #b38d3b;
+  }
+
+  .opponent .tile.small.sideRotated,
+  .opponent .tile.back.small.sideRotated {
+    width: 16px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1px solid #b38d3b;
+  }
+
+  .sideBody.west .sideTileLine,
+  .sideBody.east .sideTileLine,
+  .sideOpened,
+  .sideOpened .meldStrip.vertical {
+    gap: 0;
+  }
+
+  .wallStack {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    border: 1px solid #b38d3b;
+  }
+
+  #wallWest .wallStack,
+  #wallEast .wallStack {
+    width: 6px;
+    height: 6px;
+  }
+
+  .wallSide.horizontal {
+    min-height: 12px;
+  }
+
+  .wallSide.vertical {
+    min-height: 120px;
+  }
 }
 
 @media (max-width: 1120px) {
@@ -1027,17 +1251,18 @@ button:disabled {
   }
 
   .midRow {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto 1fr auto;
+    gap: 0;
   }
 
 
   .wallMiddle {
-    grid-template-columns: 1fr;
+    grid-template-columns: 30px minmax(417px, 1fr) 30px;
   }
 
-.wallSide.vertical {
-    flex-direction: row;
-    min-height: auto;
+  .wallSide.vertical {
+    flex-direction: column;
+    min-height: 180px;
   }
 }
 
@@ -1102,7 +1327,8 @@ button:disabled {
   }
 
   .midRow {
-    gap: 6px;
+    grid-template-columns: auto 1fr auto;
+    gap: 0;
     flex: 1 1 auto;
     min-height: 360px;
   }
